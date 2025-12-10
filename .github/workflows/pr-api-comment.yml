@@ -36,17 +36,20 @@ jobs:
             });
             
             // 最大10ファイルまで
-            const diffData = targetFiles.slice(0, 10).map(f => ({
-              filename: f.filename,
-              diff: f.patch
-            }));
-            return JSON.stringify(diffData);
+            const diffData = targetFiles.slice(0, 10);
+            
+            // 人間が読める形式に整形
+            const formattedContent = diffData.map(file => 
+              `ファイル: ${file.filename}\n変更内容:\n${file.patch}\n---`
+            ).join('\n\n');
+            
+            return formattedContent;
           
       - name: Call API with filtered data
         id: api-call
         run: |
-          # JSONデータを直接contentフィールドにセット
-          body=$(echo '${{ steps.get-diff.outputs.result }}' | jq '{content: .}')
+          # 整形済みテキストをcontentフィールドにセット
+          body=$(jq -n --arg content "${{ steps.get-diff.outputs.result }}" '{content: $content}')
           
           response=$(curl -s -X POST ${{ secrets.API_ENDPOINT }} \
             -H "Content-Type: application/json" \
